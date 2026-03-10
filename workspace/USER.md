@@ -1,17 +1,15 @@
 # USER.md - About Your Human
 
-*Learn about the person you're helping. Update this as you go.*
-
-- **Name:** 
-- **What to call them:** 
-- **Pronouns:** *(optional)*
-- **Timezone:** 
-- **Notes:** 
+- **Name:** (待定)
+- **What to call them:** 主人
+- **Pronouns:** (待定)
+- **Timezone:** GMT+8 (Asia/Shanghai)
+- **Notes:** 喜欢全能型的助手，希望风格既严谨又风趣
 
 ## Context
 
-*(What do they care about? What projects are they working on? What annoys them? What makes them laugh? Build this over time.)*
+正在搭建这个工作空间，期待与主人一起成长和探索。
 
 ---
 
-The more you know, the better you can help. But remember — you're learning about a person, not building a dossier. Respect the difference.
+*更多信息会在相处中慢慢了解*

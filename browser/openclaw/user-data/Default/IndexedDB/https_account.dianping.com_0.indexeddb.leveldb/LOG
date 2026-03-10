@@ -1,0 +1,6 @@
+2026/03/09-15:45:02.097 1ab34 Creating DB /workspace/projects/browser/openclaw/user-data/Default/IndexedDB/https_account.dianping.com_0.indexeddb.leveldb since it was missing.
+2026/03/09-15:45:02.102 1ab34 Reusing MANIFEST /workspace/projects/browser/openclaw/user-data/Default/IndexedDB/https_account.dianping.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/03/09-16:44:58.637 1ab34 Level-0 table #5: started
+2026/03/09-16:44:58.639 1ab34 Level-0 table #5: 67877 bytes OK
+2026/03/09-16:44:58.641 1ab34 Delete type=0 #3
+2026/03/09-16:44:58.641 1ab34 Manual compaction at level-0 from (begin) .. (end); will stop at (end)
