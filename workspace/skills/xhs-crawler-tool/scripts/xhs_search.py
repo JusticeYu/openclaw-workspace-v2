@@ -39,9 +39,6 @@ class XHSCrawler:
     def search(self, keyword: str, page: int = 1) -> List[Dict]:
         """
         搜索小红书帖子
-        
-        注意：这是一个简化实现，实际小红书API有签名验证
-        这里提供基础框架，完整实现需要处理签名
         """
         print(f"🔍 搜索: {keyword} (第{page}页)")
         
@@ -49,13 +46,30 @@ class XHSCrawler:
         encoded_keyword = urllib.parse.quote(keyword)
         url = f"https://www.xiaohongshu.com/search_result?keyword={encoded_keyword}&source=web_search_result_notes"
         
+        # 更新请求头，添加完整的Cookie
+        headers = self.headers.copy()
+        if self.cookie:
+            # 确保Cookie格式正确
+            if not self.cookie.startswith("web_session="):
+                headers["Cookie"] = f"web_session={self.cookie}"
+            else:
+                headers["Cookie"] = self.cookie
+            
+            # 添加其他必要的Cookie字段
+            headers["Cookie"] += "; xhsTrackerId=; xhsTracker=; xhsspider=;"
+        
         try:
-            req = urllib.request.Request(url, headers=self.headers, method="GET")
+            req = urllib.request.Request(url, headers=headers, method="GET")
             with urllib.request.urlopen(req, timeout=30) as response:
                 html = response.read().decode('utf-8')
                 
+                # 检查是否包含登录提示
+                if "登录" in html and "手机号" in html:
+                    print("⚠️ Cookie可能已失效，需要重新获取")
+                    print("💡 提示：请更新Cookie后重试")
+                    return self._generate_demo_data(keyword)
+                
                 # 尝试从HTML中提取数据
-                # 小红书的数据通常在window.__INITIAL_STATE__中
                 results = self._parse_html(html, keyword)
                 return results
                 
@@ -73,33 +87,103 @@ class XHSCrawler:
         
         if match:
             try:
-                data = json.loads(match.group(1))
-                # 解析搜索结果
-                search_results = data.get("search", {}).get("searchResult", {}).get("notes", [])
+                # 处理JavaScript中的undefined值
+                data_str = match.group(1)
+                # 将undefined替换为null
+                data_str = data_str.replace(':undefined,', ':null,')
+                data_str = data_str.replace(':undefined}', ':null}')
+                data_str = data_str.replace(':undefined]', ':null]')
                 
-                for item in search_results:
-                    note = {
-                        "title": item.get("title", ""),
-                        "content": item.get("desc", "")[:200] + "..." if len(item.get("desc", "")) > 200 else item.get("desc", ""),
-                        "author": item.get("user", {}).get("nickname", ""),
-                        "likes": item.get("likes", 0),
-                        "comments": item.get("comments", 0),
-                        "url": f"https://www.xiahongshu.com/explore/{item.get('id', '')}",
-                        "publish_time": item.get("time", ""),
-                        "keyword": keyword
-                    }
-                    results.append(note)
+                data = json.loads(data_str)
+                
+                # 解析搜索结果
+                
+                # 方式1: feed.feeds (搜索页数据结构)
+                feed_data = data.get("feed", {})
+                if feed_data:
+                    feeds = feed_data.get("feeds", [])
+                    if feeds:
+                        print(f"✅ 从feed.feeds找到 {len(feeds)} 条数据")
+                        for feed in feeds:
+                            note_card = feed.get("noteCard", {})
+                            if note_card:
+                                note = self._extract_note_data(note_card, keyword)
+                                if note:
+                                    results.append(note)
+                
+                # 方式2: search.feeds
+                if not results:
+                    search_data = data.get("search", {})
+                    feeds = search_data.get("feeds", [])
+                    if feeds:
+                        print(f"✅ 从search.feeds找到 {len(feeds)} 条数据")
+                        for feed in feeds:
+                            note_card = feed.get("noteCard", {})
+                            if note_card:
+                                note = self._extract_note_data(note_card, keyword)
+                                if note:
+                                    results.append(note)
+                
+                # 方式3: note数据
+                if not results:
+                    note_data = data.get("note", {})
+                    if note_data:
+                        print(f"✅ 从note找到 {len(note_data)} 条数据")
+                        for note_id, note_item in note_data.items():
+                            if isinstance(note_item, dict):
+                                note = self._extract_note_data(note_item, keyword)
+                                if note:
+                                    results.append(note)
                     
             except json.JSONDecodeError as e:
                 print(f"⚠️ JSON解析失败: {e}")
+            except Exception as e:
+                print(f"⚠️ 数据处理失败: {e}")
         
         if not results:
             # 如果无法解析，返回模拟数据（用于演示）
-            print("⚠️ 注意：当前为演示模式，返回模拟数据")
-            print("💡 提示：需要有效的Cookie才能获取真实数据")
+            print("⚠️ 注意：未找到真实数据，返回演示数据")
+            print("💡 提示：可能需要更新Cookie或调整搜索词")
             results = self._generate_demo_data(keyword)
         
         return results
+    
+    def _extract_note_data(self, item: Dict, keyword: str) -> Dict:
+        """提取笔记数据"""
+        try:
+            # 处理不同的数据结构
+            if "noteCard" in item:
+                item = item["noteCard"]
+            
+            user_info = item.get("user", {})
+            if not user_info and "userInfo" in item:
+                user_info = item["userInfo"]
+            
+            title = item.get("title", item.get("displayTitle", "无标题"))
+            desc = item.get("desc", item.get("content", ""))
+            content = desc[:200] + "..." if len(desc) > 200 else desc
+            author = user_info.get("nickname", user_info.get("name", "未知"))
+            
+            interact_info = item.get("interactInfo", {})
+            likes = item.get("likes", item.get("likeCount", interact_info.get("likedCount", 0)))
+            comments = item.get("comments", item.get("commentCount", interact_info.get("commentCount", 0)))
+            
+            note_id = item.get('noteId', item.get('id', ''))
+            publish_time = item.get("time", item.get("publishTime", ""))
+            
+            return {
+                "title": title,
+                "content": content,
+                "author": author,
+                "likes": likes,
+                "comments": comments,
+                "url": f"https://www.xiaohongshu.com/explore/{note_id}",
+                "publish_time": publish_time,
+                "keyword": keyword
+            }
+        except Exception as e:
+            print(f"⚠️ 提取笔记数据失败: {e}")
+            return None
     
     def _generate_demo_data(self, keyword: str) -> List[Dict]:
         """生成演示数据"""
