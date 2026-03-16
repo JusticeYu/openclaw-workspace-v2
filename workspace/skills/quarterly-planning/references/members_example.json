@@ -1,0 +1,9 @@
+[
+  {"name": "张三", "role": "dev", "capacity": 0.8},
+  {"name": "李四", "role": "dev", "capacity": 1.0},
+  {"name": "王五", "role": "dev", "capacity": 1.0},
+  {"name": "赵六", "role": "test", "capacity": 0.8},
+  {"name": "孙七", "role": "test", "capacity": 0.7},
+  {"name": "周八", "role": "product", "capacity": 0.5},
+  {"name": "吴九", "role": "product", "capacity": 0.3}
+]
