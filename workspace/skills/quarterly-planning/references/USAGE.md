@@ -268,6 +268,45 @@ python scripts/capacity_calculator.py \
   --total-days 300
 ```
 
+### 示例5：计算个人负荷和风险预警
+
+```bash
+# 方式1：只计算个人负荷（需要成员文件和任务分配）
+python scripts/personal_capacity_calculator.py \
+  --workdays 62 \
+  --members-file references/members_example.json \
+  --tasks-file references/tasks_example.json
+
+# 方式2：计算团队+个人负荷
+python scripts/personal_capacity_calculator.py \
+  --workdays 62 \
+  --members-file references/members_example.json \
+  --team-name "项目组A" \
+  --total-days 180
+```
+
+**输出示例（包含风险预警）：**
+```
+⚠️ 风险预警
+
+🔴 张三（dev）负荷率 110.9%，超出可用产能！
+  严重程度：HIGH
+  建议措施：需要立即调整任务分配或增加资源
+
+📈 汇总统计
+  负荷超标（>100%）：1 人
+  负荷正常（50-100%）：6 人
+  负荷偏低（<50%）：0 人
+  综合风险等级：🔴 RED
+```
+
+**风险等级：**
+| 负荷率 | 风险等级 | 状态 |
+|--------|----------|------|
+| >100% | 🔴 HIGH | 超负荷，需调整 |
+| 80-100% | 🟡 MEDIUM | 正常 |
+| <50% | 🟢 LOW | 未充分利用 |
+
 ### 示例4：生成自定义PPT
 
 ```bash
